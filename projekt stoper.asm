@@ -1,12 +1,13 @@
 ;.TITLE	'STOPER'
-;Authors: Przemys≥aw Fyk, Gennadii Genin, Damian G≥os
+;Authors: Przemys≈Çaw Fyk, Gennadii Genin, Damian G≈Ços
 ;============================
 
-STOS	EQU	60H		;wartoúÊ wskaünika stosu w RAMie
+STOS	EQU	60H		;warto≈õƒá wska≈∫nika stosu w RAMie
 
-SEG_ON	EQU	P1.6		;linia wygaszania wyúwietlacza
+SEG_ON	EQU	P1.6		;linia wygaszania wy≈õwietlacza
+LED	EQU	P1.7
 
-;PamiÍÊ wyúwietlacza
+;Pamiƒôƒá wy≈õwietlacza
 DISPLAY	EQU	30H
 LEDS	EQU	DISPLAY+6
 DOTS	EQU	LEDS+1
@@ -14,8 +15,8 @@ NEXT	EQU	DOTS+1
 
 
 
-;Timer 0 przeglπdanie wskaünikÛw
-;uaktywniany co ok. 1ms - niøszy priorytet
+;Timer 0 przeglƒÖdanie wska≈∫nik√≥w
+;uaktywniany co ok. 1ms - ni≈ºszy priorytet
 ;1ms =~30 * 32 cykli
 ;Mod 0 - starszy bajt liczy do 30
  
@@ -27,7 +28,7 @@ TMOD_SET	EQU	00010000B
 TH0_SET		EQU	256-30
 TH1_SET		EQU	256-36
 IE_SET		EQU	10001010B	;przerwania T0 i T1
-IP_SET		EQU	00001000B	;wyøszy priorytet T1
+IP_SET		EQU	00001000B	;wy≈ºszy priorytet T1
 TCON_SET	EQU	00010000B	;start timer T0
 ;(setb TR1 - start Timer 1)
 
@@ -102,7 +103,7 @@ CONT_INTT0:
 	MOV	A,@R1
 	CJNE	R1,#LEDS,D7SEG
 
-;wyúwietlenie LedÛw
+;wy≈õwietlenie Led√≥w
 	SJMP	DISP_SET	
 D7SEG:
 	ACALL	CODE7_GET
@@ -121,8 +122,8 @@ DOT_NO:
 DISP_SET:
 	MOVX	@R0,A
 
-	MOV	A,R2		;kolejny wskaünik
-	MOV	R0,#CSDS	;R0 - adres wyboru wskaünika
+	MOV	A,R2		;kolejny wska≈∫nik
+	MOV	R0,#CSDS	;R0 - adres wyboru wska≈∫nika
 	MOVX	@R0,A
 
 	CLR	SEG_ON
@@ -134,7 +135,7 @@ DISP_SET:
 
 ;ustaw segment 0
 	MOV	R2,#1
-	MOV	R1,#DISPLAY	;wskaünik na pamiÍÊ wyúwietlacza
+	MOV	R1,#DISPLAY	;wska≈∫nik na pamiƒôƒá wy≈õwietlacza
 
 NEXT_SEG:
 	POP	PSW
@@ -145,7 +146,7 @@ NEXT_SEG:
 
 	ORG	100H
 START:
-	MOV	SP,#STOS	;wskaünik stosu
+	MOV	SP,#STOS	;wska≈∫nik stosu
 
 	ACALL	STOPPER_CLEAR
 
@@ -157,10 +158,9 @@ START:
 	MOV	IP,#IP_SET
 	MOV	TCON,#TCON_SET
 
-
 	BANK1
-	MOV	R2,#1		;wybÛr wskaünika - 0 (kod 1 z 7)
-	MOV	R1,#DISPLAY	;wskaünik na pamiÍÊ wyúwietlacza
+	MOV	R2,#1		;wyb√≥r wska≈∫nika - 0 (kod 1 z 7)
+	MOV	R1,#DISPLAY	;wska≈∫nik na pamiƒôƒá wy≈õwietlacza
 	BANK0
 
 LOOP:
@@ -172,17 +172,22 @@ LOOP:
 ;start timer
 	SETB	TR1
 	MOV	LEDS,#10H
-
+	CPL	LED
+	MOV	A,#1
+	LCALL	DELAY_100MS
+	SETB	LED
 	LCALL	LCD_CLR
 	MOV	DPTR,#TEXT2
 	LCALL	WRITE_TEXT
-
 	LCALL	WAIT_ENTER_NW
 
 ;stop timer
 	CLR	TR1
 	MOV	LEDS,#20H
-
+	CPL	LED
+	MOV	A,#1
+	LCALL	DELAY_100MS
+	SETB	LED
 	AJMP	LOOP	
 
 
