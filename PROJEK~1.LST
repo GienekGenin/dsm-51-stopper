@@ -1,0 +1,249 @@
+     1                  ;.TITLE	'STOPER'
+     2                  ;Authors: Przemys³aw Fyk, Gennadii Genin, Damian G³os
+     3                  ;============================
+     4                  
+     5        0060      STOS	EQU	60H		;wartoœæ wskaŸnika stosu w RAMie
+     6                  
+     7        0096      SEG_ON	EQU	P1.6		;linia wygaszania wyœwietlacza
+     8                  
+     9                  ;Pamiêæ wyœwietlacza
+    10        0030      DISPLAY	EQU	30H
+    11        0036      LEDS	EQU	DISPLAY+6
+    12        0037      DOTS	EQU	LEDS+1
+    13        0038      NEXT	EQU	DOTS+1
+    14                  
+    15                  
+    16                  
+    17                  ;Timer 0 przegl¹danie wskaŸników
+    18                  ;uaktywniany co ok. 1ms - ni¿szy priorytet
+    19                  ;1ms =~30 * 32 cykli
+    20                  ;Mod 0 - starszy bajt liczy do 30
+    21                   
+    22                  ;Timer 1 odliczanie czasu 10 ms
+    23                  ;10ms = 36*256 cykli
+    24                  ;Mod 1 - przestawiam tylko starszy bajt
+    25                  
+    26        0010      TMOD_SET	EQU	00010000B
+    27        00E2      TH0_SET		EQU	256-30
+    28        00DC      TH1_SET		EQU	256-36
+    29        008A      IE_SET		EQU	10001010B	;przerwania T0 i T1
+    30        0008      IP_SET		EQU	00001000B	;wy¿szy priorytet T1
+    31        0010      TCON_SET	EQU	00010000B	;start timer T0
+    32                  ;(setb TR1 - start Timer 1)
+    33                  
+    34                  BANK0	MACRO
+    35                  	CLR	RS0
+    36                  	MACEND
+    37                  
+    38                  BANK1	MACRO
+    39                  	SETB	RS0
+    40                  	MACEND
+    41                  
+    42                  
+    43                  
+    44  0000: 02 01 00  	LJMP	START
+    45                  
+    46  000B:           	ORG	0BH
+    47                  ;przerwanie Timer 0
+    48  000B: C0 E0     	PUSH	ACC
+    49  000D: C0 D0     	PUSH	PSW
+    50                  	BANK1
+>    1  000F: D2 D3     	SETB	RS0
+>    2                  	MACEND
+    51  0011: 75 8C E2  	MOV	TH0,#TH0_SET
+    52  0014: 01 63     	AJMP	CONT_INTT0
+    53                  
+    54  001B:           	ORG	1BH
+    55                  ;przerwanie Timer 1
+    56  001B: C0 E0     	PUSH	ACC
+    57  001D: C0 D0     	PUSH	PSW
+    58                  	
+    59  001F: 75 8D DC  	MOV	TH1,#TH1_SET
+    60                  
+    61  0022: 05 30     	INC	DISPLAY
+    62  0024: 74 0A     	MOV	A,#10
+    63  0026: B5 30 35  	CJNE	A,DISPLAY,INTT1_END
+    64  0029: 75 30 00  	MOV	DISPLAY,#0
+    65                  
+    66  002C: 05 31     	INC	DISPLAY+1
+    67  002E: 74 0A     	MOV	A,#10
+    68  0030: B5 31 2B  	CJNE	A,DISPLAY+1,INTT1_END
+    69  0033: 75 31 00  	MOV	DISPLAY+1,#0
+    70                  
+    71  0036: 05 32     	INC	DISPLAY+2
+    72  0038: 74 0A     	MOV	A,#10
+    73  003A: B5 32 21  	CJNE	A,DISPLAY+2,INTT1_END
+    74  003D: 75 32 00  	MOV	DISPLAY+2,#0
+    75                  
+    76  0040: 05 33     	INC	DISPLAY+3
+    77  0042: 74 06     	MOV	A,#6
+    78  0044: B5 33 17  	CJNE	A,DISPLAY+3,INTT1_END
+    79  0047: 75 33 00  	MOV	DISPLAY+3,#0
+    80                  
+    81  004A: 05 34     	INC	DISPLAY+4
+    82  004C: 74 0A     	MOV	A,#10
+    83  004E: B5 34 0D  	CJNE	A,DISPLAY+4,INTT1_END
+    84  0051: 75 34 00  	MOV	DISPLAY+4,#0
+    85                  
+    86  0054: 05 35     	INC	DISPLAY+5
+    87  0056: 74 06     	MOV	A,#6
+    88  0058: B5 35 03  	CJNE	A,DISPLAY+5,INTT1_END
+    89  005B: 75 35 00  	MOV	DISPLAY+5,#0
+    90                  
+    91  005E:           INTT1_END:
+    92  005E: D0 D0     	POP	PSW
+    93  0060: D0 E0     	POP	ACC
+    94  0062: 32        	RETI
+    95                  
+    96                  
+    97                  
+    98  0063:           CONT_INTT0:
+    99  0063: 78 38     	MOV	R0,#CSDB	;R0 - adres bufora wyswietlaczy
+   100                  
+   101  0065: D2 96     	SETB	SEG_ON
+   102  0067: E7        	MOV	A,@R1
+   103  0068: B9 36 02  	CJNE	R1,#LEDS,D7SEG
+   104                  
+   105                  ;wyœwietlenie Ledów
+   106  006B: 80 0F     	SJMP	DISP_SET	
+   107  006D:           D7SEG:
+   108  006D: 31 46     	ACALL	CODE7_GET
+   109                  
+   110                  ;dodanie kropki
+   111  006F: C0 E0     	PUSH	ACC
+   112  0071: C3        	CLR	C
+   113  0072: EA        	MOV	A,R2
+   114  0073: 55 37     	ANL	A,DOTS
+   115  0075: 60 01     	JZ	DOT_NO
+   116  0077: D3        	SETB	C
+   117  0078:           DOT_NO:
+   118  0078: D0 E0     	POP	ACC
+   119  007A: 92 E7     	MOV	ACC.7,C
+   120                  
+   121  007C:           DISP_SET:
+   122  007C: F2        	MOVX	@R0,A
+   123                  
+   124  007D: EA        	MOV	A,R2		;kolejny wskaŸnik
+   125  007E: 78 30     	MOV	R0,#CSDS	;R0 - adres wyboru wskaŸnika
+   126  0080: F2        	MOVX	@R0,A
+   127                  
+   128  0081: C2 96     	CLR	SEG_ON
+   129                  
+   130  0083: 23        	RL	A
+   131  0084: FA        	MOV	R2,A
+   132  0085: 09        	INC	R1
+   133  0086: B9 37 04  	CJNE	R1,#DOTS,NEXT_SEG
+   134                  
+   135                  ;ustaw segment 0
+   136  0089: 7A 01     	MOV	R2,#1
+   137  008B: 79 30     	MOV	R1,#DISPLAY	;wskaŸnik na pamiêæ wyœwietlacza
+   138                  
+   139  008D:           NEXT_SEG:
+   140  008D: D0 D0     	POP	PSW
+   141  008F: D0 E0     	POP	ACC
+   142  0091: 32        	RETI
+   143                  
+   144                  
+   145                  
+   146  0100:           	ORG	100H
+   147  0100:           START:
+   148  0100: 75 81 60  	MOV	SP,#STOS	;wskaŸnik stosu
+   149                  
+   150  0103: 31 59     	ACALL	STOPPER_CLEAR
+   151                  
+   152  0105: 75 89 10  	MOV	TMOD,#TMOD_SET
+   153  0108: 75 8C E2  	MOV	TH0,#TH0_SET
+   154  010B: 75 8D DC  	MOV	TH1,#TH1_SET
+   155  010E: 75 8B 00  	MOV	TL1,#0
+   156  0111: 75 A8 8A  	MOV	IE,#IE_SET
+   157  0114: 75 B8 08  	MOV	IP,#IP_SET
+   158  0117: 75 88 10  	MOV	TCON,#TCON_SET
+   159                  
+   160                  
+   161                  	BANK1
+>    1  011A: D2 D3     	SETB	RS0
+>    2                  	MACEND
+   162  011C: 7A 01     	MOV	R2,#1		;wybór wskaŸnika - 0 (kod 1 z 7)
+   163  011E: 79 30     	MOV	R1,#DISPLAY	;wskaŸnik na pamiêæ wyœwietlacza
+   164                  	BANK0
+>    1  0120: C2 D3     	CLR	RS0
+>    2                  	MACEND
+   165                  
+   166  0122:           LOOP:
+   167  0122: 12 81 0C  	LCALL	LCD_CLR
+   168  0125: 90 01 6D  	MOV	DPTR,#TEXT1
+   169  0128: 12 81 00  	LCALL	WRITE_TEXT
+   170                  
+   171  012B: 12 81 16  	LCALL	WAIT_ENTER_NW
+   172                  ;start timer
+   173  012E: D2 8E     	SETB	TR1
+   174  0130: 75 36 10  	MOV	LEDS,#10H
+   175                  
+   176  0133: 12 81 0C  	LCALL	LCD_CLR
+   177  0136: 90 01 8D  	MOV	DPTR,#TEXT2
+   178  0139: 12 81 00  	LCALL	WRITE_TEXT
+   179                  
+   180  013C: 12 81 16  	LCALL	WAIT_ENTER_NW
+   181                  
+   182                  ;stop timer
+   183  013F: C2 8E     	CLR	TR1
+   184  0141: 75 36 20  	MOV	LEDS,#20H
+   185                  
+   186  0144: 21 22     	AJMP	LOOP	
+   187                  
+   188                  
+   189  0146:           CODE7_GET:
+   190  0146: 04        	INC	A
+   191  0147: 83        	MOVC	A,@A+PC
+   192  0148: 22        	RET
+   193                  
+   194  0149: 3F        	DB	03FH	;0
+   195  014A: 06        	DB	006H	;1
+   196  014B: 5B        	DB	05BH	;2
+   197  014C: 4F        	DB	04FH	;3
+   198  014D: 66        	DB	066H	;4
+   199  014E: 6D        	DB	06DH	;5
+   200  014F: 7D        	DB	07DH	;6
+   201  0150: 07        	DB	007H	;7
+   202  0151: 7F        	DB	07FH	;8
+   203  0152: 6F        	DB	06FH	;9
+   204  0153: 77        	DB	077H	;A
+   205  0154: 7C        	DB	07CH	;b
+   206  0155: 39        	DB	039H	;C
+   207  0156: 5E        	DB	05EH	;d
+   208  0157: 79        	DB	079H	;E
+   209  0158: 71        	DB	071H	;F
+   210                  
+   211                  
+   212  0159:           STOPPER_CLEAR:
+   213  0159: E4        	CLR	A
+   214  015A: F5 30     	MOV	DISPLAY,A
+   215  015C: F5 31     	MOV	DISPLAY+1,A
+   216  015E: F5 32     	MOV	DISPLAY+2,A
+   217  0160: F5 33     	MOV	DISPLAY+3,A
+   218  0162: F5 34     	MOV	DISPLAY+4,A
+   219  0164: F5 35     	MOV	DISPLAY+5,A
+   220  0166: 75 36 20  	MOV	LEDS,#20H
+   221  0169: 75 37 14  	MOV	DOTS,#00010100B
+   222  016C: 22        	RET
+   223                  
+   224                  
+   225  016D:           TEXT1:
+   226  016D: 45 4E 54  	DB	'ENTER -> START  '
+        0170: 45 52 20 
+        0173: 2D 3E 20 
+        0176: 53 54 41 
+        0179: 52 54 20 
+        017C: 20 
+   227  017D: 52 45 53  	DB	'RESET RAM->CLR ',0
+        0180: 45 54 20 
+        0183: 52 41 4D 
+        0186: 2D 3E 43 
+        0189: 4C 52 20 
+        018C: 00 
+   228  018D:           TEXT2:
+   229  018D: 45 4E 54  	DB	'ENTER -> STOP',0
+        0190: 45 52 20 
+        0193: 2D 3E 20 
+        0196: 53 54 4F 
+        0199: 50 00 
