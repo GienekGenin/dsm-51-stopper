@@ -13,8 +13,6 @@ LEDS	EQU	DISPLAY+6
 DOTS	EQU	LEDS+1
 NEXT	EQU	DOTS+1
 
-
-
 ;Timer 0 przeglądanie wskaźników
 ;uaktywniany co ok. 1ms - niższy priorytet
 ;1ms =~30 * 32 cykli
@@ -39,8 +37,6 @@ BANK0	MACRO
 BANK1	MACRO
 	SETB	RS0
 	MACEND
-
-
 
 	LJMP	START
 
@@ -94,8 +90,6 @@ INTT1_END:
 	POP	ACC
 	RETI
 
-
-
 CONT_INTT0:
 	MOV	R0,#CSDB	;R0 - adres bufora wyswietlaczy
 
@@ -142,8 +136,6 @@ NEXT_SEG:
 	POP	ACC
 	RETI
 
-
-
 	ORG	100H
 START:
 	MOV	SP,#STOS	;wskaźnik stosu
@@ -162,7 +154,6 @@ START:
 	MOV	R2,#1		;wybór wskaźnika - 0 (kod 1 z 7)
 	MOV	R1,#DISPLAY	;wskaźnik na pamięć wyświetlacza
 	BANK0
-
 LOOP:
 	LCALL	LCD_CLR
 	MOV	DPTR,#TEXT1
@@ -189,8 +180,7 @@ LOOP:
 	LCALL	DELAY_100MS
 	SETB	LED
 	AJMP	LOOP	
-
-
+	
 CODE7_GET:
 	INC	A
 	MOVC	A,@A+PC
@@ -213,7 +203,6 @@ CODE7_GET:
 	DB	079H	;E
 	DB	071H	;F
 
-
 STOPPER_CLEAR:
 	CLR	A
 	MOV	DISPLAY,A
@@ -225,7 +214,6 @@ STOPPER_CLEAR:
 	MOV	LEDS,#20H
 	MOV	DOTS,#00010100B
 	RET
-
 
 TEXT1:
 	DB	'ENTER -> START  '
